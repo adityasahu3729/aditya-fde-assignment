@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cold Call Assistant</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f3f5f9;
+      color: #172033;
+    }
+    header {
+      background: #172554;
+      color: white;
+      padding: 20px 7%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    header h1 { margin: 0; font-size: 22px; }
+    header p { margin: 6px 0 0; color: #cbd5e1; }
+    nav { display: flex; gap: 8px; }
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 11px 15px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .nav-btn { background: #334155; color: white; }
+    .nav-btn.active, .primary { background: #2563eb; color: white; }
+    main { max-width: 950px; margin: 28px auto; padding: 0 18px; }
+    .card {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 18px;
+      box-shadow: 0 5px 18px #0f172a0a;
+    }
+    .muted { color: #64748b; }
+    .topline { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .pill { background: #dbeafe; color: #1d4ed8; padding: 6px 10px; border-radius: 20px; font-size: 13px; }
+    .progress { height: 7px; background: #e2e8f0; border-radius: 10px; overflow: hidden; margin: 15px 0 22px; }
+    #progressBar { height: 100%; background: #2563eb; width: 12.5%; transition: width .2s; }
+    h2 { margin-top: 0; }
+    h3 { margin-bottom: 8px; }
+    .purpose { background: #eff6ff; padding: 16px; border-radius: 10px; line-height: 1.5; }
+    .quote { border-left: 3px solid #93c5fd; padding: 10px 14px; color: #475569; background: #f8fafc; line-height: 1.5; }
+    label { display: block; font-weight: 600; margin: 18px 0 8px; }
+    input, textarea, select {
+      width: 100%; padding: 12px; border: 1px solid #cbd5e1;
+      border-radius: 8px; font: inherit; background: white;
+    }
+    textarea { min-height: 90px; resize: vertical; }
+    .choices { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 10px; }
+    .choice {
+      border: 1px solid #cbd5e1; border-radius: 9px; padding: 13px;
+      cursor: pointer; background: white; font-weight: 500;
+    }
+    .choice.selected { border: 2px solid #2563eb; background: #eff6ff; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
+    .secondary { background: #e2e8f0; color: #172033; }
+    .hidden { display: none; }
+    .call-item { border-bottom: 1px solid #e2e8f0; padding: 14px 0; }
+    .call-item:last-child { border: 0; }
+    .notice { padding: 12px; background: #fef3c7; color: #92400e; border-radius: 8px; margin-bottom: 16px; }
+    @media(max-width:600px) {
+      header { padding: 18px; }
+      main { margin-top: 16px; padding: 0 12px; }
+      .card { padding: 17px; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Cold Call Assistant</h1>
+    <p>Your live guide for every conversation</p>
+  </div>
+  <nav>
+    <button class="nav-btn active" id="callTab" onclick="showPage('call')">Live Call</button>
+    <button class="nav-btn" id="historyTab" onclick="showPage('history')">Past Calls</button>
+  </nav>
+</header>
+
+<main>
+  <section id="callPage">
+    <div class="card">
+      <div class="topline">
+        <div>
+          <div class="muted">PROSPECT</div>
+          <h2 style="margin:7px 0 0">Start a new call</h2>
+        </div>
+        <span class="pill" id="stageCount">Stage 1 of 8</span>
+      </div>
+      <label for="prospectName">Prospect / company name</label>
+      <input id="prospectName" placeholder="e.g. Alex at Northstar" />
+      <div class="actions">
+        <button class="primary" id="startBtn" onclick="startCall()">Start Call</button>
+      </div>
+      <p id="callStatus" class="muted">Start a call to record your progress.</p>
+    </div>
+
+    <div id="stagePanel" class="card hidden">
+      <div class="topline">
+        <div>
+          <div class="muted">CURRENT CALL STAGE</div>
+          <h2 id="stageTitle">Opening</h2>
+        </div>
+        <span class="pill" id="stagePill">Stage 1</span>
+      </div>
+      <div class="progress"><div id="progressBar"></div></div>
+      <h3>Purpose of this stage</h3>
+      <div class="purpose" id="stagePurpose"></div>
+      <h3 style="margin-top:22px">What prospects often say</h3>
+      <div class="quote" id="stageSays"></div>
+
+      <label>What happened at this stage?</label>
+      <div class="choices" id="choices">
+        <button class="choice" onclick="selectChoice(this,'Positive response')">Positive response</button>
+        <button class="choice" onclick="selectChoice(this,'Neutral response')">Neutral response</button>
+        <button class="choice" onclick="selectChoice(this,'Objection raised')">Objection raised</button>
+        <button class="choice" onclick="selectChoice(this,'Could not proceed')">Could not proceed</button>
+      </div>
+
+      <label for="prospectWords">Prospect's own words</label>
+      <textarea id="prospectWords" placeholder="Write what the prospect actually said..."></textarea>
+
+      <div class="actions">
+        <button class="secondary" onclick="previousStage()">Previous</button>
+        <button class="primary" id="nextBtn" onclick="nextStage()">Save & Next Stage</button>
+      </div>
+    </div>
+
+    <div id="outcomePanel" class="card hidden">
+      <h2>Call outcome</h2>
+      <p class="muted">Choose the final outcome and close this call.</p>
+      <label for="outcome">Outcome</label>
+      <select id="outcome">
+        <option value="">Select an outcome</option>
+        <option>Meeting booked</option>
+        <option>Follow-up required</option>
+        <option>Not interested</option>
+        <option>No answer / call ended</option>
+      </select>
+      <div class="actions">
+        <button class="primary" onclick="closeCall()">Save Call Outcome</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="historyPage" class="hidden">
+    <div class="card">
+      <h2>Past Calls</h2>
+      <p class="muted">Review calls saved in this browser session.</p>
+      <div id="historyList">No calls saved yet.</div>
+    </div>
+  </section>
+</main>
+
+<script>
+const API = "https://aditya-fde-assignment.onrender.com";
+const fallbackStages = [
+  ["Opening","Get permission to begin the conversation.","“Hello, who is calling?”"],
+  ["Reason for Calling","Explain briefly why you are calling.","“What is this about?”"],
+  ["Build Rapport","Create a relevant connection without wasting time.","“Okay, go on.”"],
+  ["Discover Needs","Understand the prospect's needs and challenges.","“We already have a process for that.”"],
+  ["Present Value","Connect your offer to the prospect's needs.","“How would this help us?”"],
+  ["Handle Objections","Understand concerns and respond honestly.","“We don't have budget right now.”"],
+  ["Agree Next Step","Agree on a clear, low-friction next action.","“Can you email me the details?”"],
+  ["Close Call","Confirm the next step and end politely.","“Thanks, that's all for now.”"]
+];
+let stages = fallbackStages.map((s,i) => ({id:i+1,name:s[0],purpose:s[1],prospect_says:s[2]}));
+let stageIndex = 0, selectedChoice = "", callId = null, currentCall = null;
+let history = [];
+
+function showPage(page) {
+  document.getElementById("callPage").classList.toggle("hidden", page !== "call");
+  document.getElementById("historyPage").classList.toggle("hidden", page !== "history");
+  document.getElementById("callTab").classList.toggle("active", page === "call");
+  document.getElementById("historyTab").classList.toggle("active", page === "history");
+  if(page === "history") renderHistory();
+}
+
+async function loadStages() {
+  try {
+    const r = await fetch(API + "/stages");
+    if(!r.ok) throw new Error("Stages unavailable");
+    const data = await r.json();
+    if(Array.isArray(data) && data.length) {
+      stages = data.map((s,i) => ({
+        id:s.id ?? i+1,
+        name:s.name ?? s.stage_name ?? fallbackStages[i]?.[0] ?? `Stage ${i+1}`,
+        purpose:s.purpose ?? fallbackStages[i]?.[1] ?? "",
+        prospect_says:s.prospect_says ?? s.prospectSays ?? fallbackStages[i]?.[2] ?? ""
+      }));
+    }
+  } catch(e) {
+    console.warn("Using sample stage guidance:",e);
+  }
+}
+
+function selectChoice(button, value) {
+  selectedChoice = value;
+  document.querySelectorAll(".choice").forEach(b=>b.classList.remove("selected"));
+  button.classList.add("selected");
+}
+
+async function startCall() {
+  const name = document.getElementById("prospectName").value.trim() || "Unknown prospect";
+  try {
+    const r = await fetch(API + "/calls", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({prospect_name:name})
+    });
+    if(!r.ok) throw new Error("Could not start call");
+    currentCall = await r.json();
+    callId = currentCall.id;
+  } catch(e) {
+    callId = "local-" + Date.now();
+    currentCall = {id:callId, prospect_name:name, stage_results:[]};
+    document.getElementById("callStatus").textContent = "Demo mode: backend call creation unavailable; saving in this browser session.";
+  }
+  if(!document.getElementById("callStatus").textContent.startsWith("Demo mode")) {
+    document.getElementById("callStatus").textContent = "Call started. Record each stage as you go.";
+  }
+  stageIndex = 0;
+  document.getElementById("stagePanel").classList.remove("hidden");
+  document.getElementById("outcomePanel").classList.add("hidden");
+  document.getElementById("startBtn").disabled = true;
+  document.getElementById("prospectName").disabled = true;
+  renderStage();
+}
+
+function renderStage() {
+  const s = stages[stageIndex];
+  document.getElementById("stageTitle").textContent = s.name;
+  document.getElementById("stagePill").textContent = "Stage " + (stageIndex+1);
+  document.getElementById("stageCount").textContent = "Stage " + (stageIndex+1) + " of " + stages.length;
+  document.getElementById("stagePurpose").textContent = s.purpose;
+  document.getElementById("stageSays").textContent = s.prospect_says;
+  document.getElementById("progressBar").style.width = ((stageIndex+1)/stages.length*100)+"%";
+  document.getElementById("prospectWords").value = "";
+  selectedChoice = "";
+  document.querySelectorAll(".choice").forEach(b=>b.classList.remove("selected"));
+  document.getElementById("nextBtn").textContent = stageIndex === stages.length-1 ? "Save & Finish Stages" : "Save & Next Stage";
+}
+
+async function nextStage() {
+  if(!selectedChoice) {
+    alert("Please select what happened at this stage.");
+    return;
+  }
+  const result = {
+    stage_id: stages[stageIndex].id,
+    what_happened: selectedChoice,
+    prospect_words: document.getElementById("prospectWords").value.trim()
+  };
+  currentCall.stage_results = currentCall.stage_results || [];
+  currentCall.stage_results.push({...result, stage_name:stages[stageIndex].name});
+  if(!String(callId).startsWith("local-")) {
+    try {
+      const r = await fetch(API + `/calls/${callId}/stage`, {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(result)
+      });
+      if(!r.ok) throw new Error("Save failed");
+    } catch(e) {
+      alert("Stage was kept in this browser session, but the server did not confirm saving.");
+    }
+  }
+  if(stageIndex < stages.length-1) {
+    stageIndex++;
+    renderStage();
+  } else {
+    document.getElementById("stagePanel").classList.add("hidden");
+    document.getElementById("outcomePanel").classList.remove("hidden");
+  }
+}
+
+function previousStage() {
+  if(stageIndex > 0) stageIndex--;
+  renderStage();
+}
+
+async function closeCall() {
+  const outcome = document.getElementById("outcome").value;
+  if(!outcome) { alert("Please select a call outcome."); return; }
+  currentCall.outcome = outcome;
+  currentCall.finished_at = new Date().toISOString();
+  if(!String(callId).startsWith("local-")) {
+    try {
+      const r = await fetch(API + `/calls/${callId}/close`, {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({outcome})
+      });
+      if(!r.ok) throw new Error("Close failed");
+    } catch(e) {
+      alert("The call outcome could not be confirmed by the server. It will still appear in this browser session.");
+    }
+  }
+  history.unshift(currentCall);
+  document.getElementById("callStatus").textContent = "Call closed with outcome: " + outcome;
+  document.getElementById("stagePanel").classList.add("hidden");
+  document.getElementById("outcomePanel").classList.add("hidden");
+  document.getElementById("startBtn").disabled = false;
+  document.getElementById("prospectName").disabled = false;
+  document.getElementById("prospectName").value = "";
+  document.getElementById("outcome").value = "";
+  currentCall = null; callId = null;
+  showPage("history");
+}
+
+async function renderHistory() {
+  const list = document.getElementById("historyList");
+  list.innerHTML = "";
+  let calls = history;
+  try {
+    const r = await fetch(API + "/calls");
+    if(r.ok) {
+      const data = await r.json();
+      if(Array.isArray(data)) calls = [...history, ...data.filter(c=>!history.some(h=>h.id===c.id))];
+    }
+  } catch(e) {}
+  if(!calls.length) { list.textContent = "No calls saved yet. Start a call to create your history."; return; }
+  calls.forEach(c=>{
+    const item = document.createElement("div");
+    item.className = "call-item";
+    const name = c.prospect_name || c.prospectName || "Unknown prospect";
+    const results = c.stage_results || c.stageResults || [];
+    const reached = c.current_stage || results.length || 1;
+    item.innerHTML = `<strong>${escapeHtml(name)}</strong><p class="muted">Stage reached: ${reached} of ${stages.length}</p><p>Outcome: ${escapeHtml(c.outcome || "In progress")}</p><p class="muted">Stages recorded: ${results.length}</p>`;
+    list.appendChild(item);
+  });
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+loadStages();
+</script>
+</body>
+</html>
