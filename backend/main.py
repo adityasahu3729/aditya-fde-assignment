@@ -3,7 +3,18 @@ from pydantic import BaseModel
 from typing import Optional
 
 app = FastAPI(title="FDE Cold Call Assistant")
+from fastapi.middleware.cors import CORSMiddleware
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://127.0.0.1:5500",
+        "http://localhost:5500",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 STAGES = [
     {"id": 1, "stage_name": "Opening", "purpose": "Start the conversation politely",
      "prospect_says": "Hello, who is this?", "suggested_action": "Introduce yourself and ask permission to continue"},
