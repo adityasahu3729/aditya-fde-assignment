@@ -1,8 +1,17 @@
+import os
+from supabase import create_client, Client
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 
 app = FastAPI(title="FDE Cold Call Assistant")
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+supabase = None
+
+if SUPABASE_URL and SUPABASE_KEY:
+    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 from fastapi.middleware.cors import CORSMiddleware
 
 app.add_middleware(
